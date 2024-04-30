@@ -1,56 +1,55 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from flask import Flask, jsonify
+import threading
 import time
-import os
-import requests
-import zipfile
-from plyer import notification  # For sending desktop notifications
-from oauth import oauth_and_upload
+from flask_cors import CORS
+from flask import Flask, jsonify, request
 
-def descargar_imagenes_google(busqueda, carpeta_destino, cantidad=100):
-    options = webdriver.ChromeOptions()
-    driver = webdriver.Chrome(options=options)
-    driver.get(f"https://www.google.com/search?q={busqueda}&tbm=isch")
-    time.sleep(3)
+from auxiliars import convert_to_valid_folder_name
+from oauth import authenticate_gdrive, create_new_folder_and_get_id, upload_drive_folder
+from scrapping import download_images_from_google
+
+app = Flask(__name__)
+CORS(app)
+
+def process_data():
+    # Simulate data processing
+    for i in range(5):
+        time.sleep(5)
+        print("Data processing iteration", i+1)
+
+@app.route('/api', methods=['GET'])
+def api():
+    # Send an immediate response
+    response_message = "Response sent. Continuing to process data..."
+    response = jsonify({"message": response_message})
+    response.status_code = 200
     
-    elem = driver.find_element(By.TAG_NAME, "body")
-    for i in range(30):
-        elem.send_keys(Keys.PAGE_DOWN)
-        time.sleep(0.3)
+    # Start a new thread to process data asynchronously
+    processing_thread = threading.Thread(target=process_data)
+    processing_thread.start()
+    
+    return response
 
-    images = driver.find_elements(By.TAG_NAME, 'img')
-    if not os.path.exists(carpeta_destino):
-        os.makedirs(carpeta_destino)
+def get_len_of_word(word):
+    # Aquí puedes realizar cualquier acción necesaria con la palabra
+    return len(word)
 
-    count = 0
-    for i, image in enumerate(images):
-        if count < cantidad:
-            width = driver.execute_script("return arguments[0].naturalWidth", image)
-            height = driver.execute_script("return arguments[0].naturalHeight", image)
-            if width > 100 and height > 100:
-                src = image.get_attribute('src')
-                try:
-                    if src and src.startswith('http'):
-                        response = requests.get(src)
-                        file_path = os.path.join(carpeta_destino, f"{busqueda}_{count+1}.jpg")
-                        with open(file_path, 'wb') as file:
-                            file.write(response.content)
-                        count += 1
-                except Exception as e:
-                    print(f"Could not download image {i+1}: {e}")
-        else:
-            break
+@app.route('/web_scrapping', methods=['POST'])
+def get_length():
+    data = request.json
+    query_string = data.get('query')
+    search_query = query_string
+    destination_folder = convert_to_valid_folder_name(search_query)
+    number_of_images = 100
+    download_images_from_google(search_query, destination_folder, number_of_images)#getting images
+    local_images_folder_path = destination_folder
+    creds = authenticate_gdrive()
+    id_folder_drive_to_upload = create_new_folder_and_get_id(local_images_folder_path,creds)
+    processing_thread = threading.Thread(target=upload_drive_folder,args=(local_images_folder_path,id_folder_drive_to_upload,creds))#uploading (preparing) images
+    processing_thread.start()
+    return jsonify({"folder_id": id_folder_drive_to_upload}), 200
 
-    driver.quit()
 
-# Example usage
-search_query = "cute cats"
-destination_folder = "cat_images"
-download_count = 100
-descargar_imagenes_google(search_query, destination_folder, download_count)
-
-# log to google drive and upload it to a folder
-folder_id = '126bk1h19PGTUVov2qz17ywff1Ld1OPH_'  # Make sure to replace this with your actual folder ID
-image_folder_path = 'cat_images'
-oauth_and_upload(folder_id,image_folder_path)
+if __name__ == '__main__':
+    from waitress import serve
+    serve(app, host='0.0.0.0', port=5000)
