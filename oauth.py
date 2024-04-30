@@ -4,7 +4,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import os
 from googleapiclient.http import MediaFileUpload
-
+from auxiliars import convert_to_valid_folder_name
 
 # Define the scopes
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
@@ -26,24 +26,44 @@ def authenticate_gdrive():
             token.write(creds.to_json())
     return creds
 
-def upload_file_to_drive(filename, filepath, folder_id):
-    creds = authenticate_gdrive()
+def upload_file_to_drive(filename, filepath, folder_destination_id,creds):
     service = build('drive', 'v3', credentials=creds)
     file_metadata = {
         'name': filename,
-        'parents': [folder_id]
+        'parents': [folder_destination_id]
     }
     media = MediaFileUpload(filepath, mimetype='image/jpeg')
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
     print('File ID: %s' % file.get('id'))
 
+def create_new_folder_and_get_id(drive_new_folder_name,creds):
+    service = build('drive', 'v3', credentials=creds)
+    # Crea la metadata para la nueva carpeta
+    folder_metadata = {
+        'name': drive_new_folder_name,#NEW FOLDER NAME
+        'mimeType': 'application/vnd.google-apps.folder',
+        'parents': ["126bk1h19PGTUVov2qz17ywff1Ld1OPH_"]#PARETN FOLDER ID
+    }
+
+    # Crea la carpeta
+    folder = service.files().create(body=folder_metadata, fields='id').execute()
+
+    # Obtiene el ID de la carpeta creada
+    new_folder_id = folder.get('id')
+    return new_folder_id
 
 
-def oauth_and_upload(folder_id,image_folder_path):
-    for filename in os.listdir(image_folder_path):
+def upload_drive_folder(local_images_folder_path,id_folder_drive_to_upload,creds):
+    
+    
+    for filename in os.listdir(local_images_folder_path):
         if filename.endswith('.jpg'):
-            upload_file_to_drive(filename, os.path.join(image_folder_path, filename), folder_id)
+            upload_file_to_drive(filename, os.path.join(local_images_folder_path, filename), id_folder_drive_to_upload,creds)
+    return id_folder_drive_to_upload
 
-#folder_id = '126bk1h19PGTUVov2qz17ywff1Ld1OPH_'  # Make sure to replace this with your actual folder ID
-#image_folder_path = 'cat_images'
-#oauth_and_upload(folder_id,image_folder_path)
+# Example usage
+#search_query = "nubes"
+#local_images_folder_path = convert_to_valid_folder_name(search_query)
+#creds = authenticate_gdrive()
+#id_folder_drive_to_upload = create_new_folder_and_get_id(local_images_folder_path,creds)
+#upload_drive_folder(local_images_folder_path,id_folder_drive_to_upload,creds)
