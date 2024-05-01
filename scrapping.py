@@ -1,19 +1,30 @@
+import time
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import os
 import requests
-import zipfile
-from plyer import notification  # For sending desktop notifications
-from oauth import upload_drive_folder
-from auxiliars import convert_to_valid_folder_name
-
+from selenium.webdriver.chrome.options import Options
 
 def download_images_from_google(search_query, destination_folder, number_of_images):
-    options = webdriver.ChromeOptions()
-    driver = webdriver.Chrome(options=options)
+    # Set up the Service for ChromeDriver
+    s = Service('/usr/local/bin/chromedriver')
+    options = Options()
+    options.add_argument("--headless")  # Runs Chrome in headless mode.
+    options.add_argument("--no-sandbox")  # Bypass OS security model
+    options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
+
+    # Initialize the WebDriver with the specified service
+    driver = webdriver.Chrome(service=s, options=options)
+
     driver.get(f"https://www.google.com/search?q={search_query}&tbm=isch")
+    print(f"The browser being used is: {driver.capabilities['browserName']}")
+
     time.sleep(3)
     
     elem = driver.find_element(By.TAG_NAME, "body")
@@ -46,8 +57,9 @@ def download_images_from_google(search_query, destination_folder, number_of_imag
 
     driver.quit()
 
+
 # Example usage
-#search_query = "pandas"
-#destination_folder = convert_to_valid_folder_name(search_query)
-#number_of_images = 100
-#download_images_from_google(search_query, destination_folder, number_of_images)
+# search_query = "pandas"
+# destination_folder = "pandas_images"
+# number_of_images = 100
+# download_images_from_google(search_query, destination_folder, number_of_images)
