@@ -46,7 +46,7 @@ def get_length():
     number_of_images_int= data.get('query')
     search_query = query_string
     destination_folder = convert_to_valid_folder_name(search_query)
-    number_of_images = number_of_images_int
+    number_of_images = int(number_of_images_int)
     download_images_from_google(search_query, destination_folder, number_of_images)#getting images
     local_images_folder_path = destination_folder
     creds = authenticate_gdrive()
