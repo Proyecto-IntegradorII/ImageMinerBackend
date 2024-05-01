@@ -1,8 +1,10 @@
 import unittest
 import os
 from unittest.mock import patch, MagicMock
+from auxiliars import convert_to_valid_folder_name
 from oauth import authenticate_gdrive, create_new_folder_and_get_id, upload_drive_folder, upload_file_to_drive
 from scrapping import download_images_from_google
+from google.oauth2.credentials import Credentials
 
 class TestDownloadImages(unittest.TestCase):
     def setUp(self):
@@ -26,55 +28,35 @@ class TestDownloadImages(unittest.TestCase):
             self.assertIn(f"{self.search_query}_{i}.jpg", files)
 
 class TestGoogleDriveFunctions(unittest.TestCase):
-    @patch('scrapping.build')
-    def test_authenticate_gdrive(self, mock_build):
-        # Mock build function to return MagicMock
-        mock_service = MagicMock()
-        mock_build.return_value = mock_service
-
+    def test_authenticate_gdrive(self):
         # Call function
         creds = authenticate_gdrive()
-
         # Assertions
-        self.assertIsInstance(creds, MagicMock)
-        mock_build.assert_called_with('drive', 'v3', credentials=None)
+        self.assertIsInstance(creds, Credentials)
 
-    @patch('scrapping.build')
-    def test_upload_file_to_drive(self, mock_build):
-        # Mock build function to return MagicMock
-        mock_service = MagicMock()
-        mock_build.return_value = mock_service
-
+    def test_create_new_folder_and_get_id(self):
         # Call function
-        upload_file_to_drive('test.jpg', '/path/to/test.jpg', 'folder_id', MagicMock())
-
-        # Assertions
-        mock_service.files.return_value.create.assert_called_once()
-
-    @patch('scrapping.build')
-    def test_create_new_folder_and_get_id(self, mock_build):
-        # Mock build function to return MagicMock
-        mock_service = MagicMock()
-        mock_build.return_value = mock_service
-
-        # Call function
-        folder_id = create_new_folder_and_get_id('TestFolder', MagicMock())
+        folder_id = create_new_folder_and_get_id('TestFolder', authenticate_gdrive())
 
         # Assertions
         self.assertIsInstance(folder_id, str)
-        mock_service.files.return_value.create.assert_called_once()
 
-    @patch('scrapping.upload_file_to_drive')
-    def test_upload_drive_folder(self, mock_upload_file):
-        # Mock upload_file_to_drive function
-        mock_upload_file.return_value = 'file_id'
+    def test_upload_drive_folder(self):
 
-        # Call function
-        result = upload_drive_folder('/path/to/local/folder', 'folder_id', MagicMock())
+        search_query = "nubes"
+        local_images_folder_path = convert_to_valid_folder_name(search_query)
+        destination_folder = local_images_folder_path
+        number_of_images = 10
+        download_images_from_google(search_query, destination_folder, number_of_images)#getting images
+        creds = authenticate_gdrive()
+        id_folder_drive_to_upload = create_new_folder_and_get_id(local_images_folder_path,creds)
+
+        #Call function
+        result = upload_drive_folder(local_images_folder_path,id_folder_drive_to_upload,creds)
 
         # Assertions
         self.assertEqual(result, 'folder_id')
-        mock_upload_file.assert_called()
+
 
 
 if __name__ == '__main__':
