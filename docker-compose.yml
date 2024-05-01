@@ -1,0 +1,9 @@
+version: '3.3'
+
+services:
+  chrome:
+    image: selenium/standalone-chrome:latest
+    volumes:
+      - /dev/shm:/dev/shm  # Helps with browser stability
+    ports:
+      - "4444:4444"  # Standard Selenium port
