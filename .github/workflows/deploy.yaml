@@ -1,0 +1,64 @@
+name: Automatic Test, Build, Deploy
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y python3 python3-pip
+        python -m pip install --upgrade pip
+        sudo apt-get update -qq -y && \
+        sudo apt-get install -y \
+        libasound2 \
+        libatk-bridge2.0-0 \
+        libgtk-4-1 \
+        libnss3 \
+        xdg-utils \
+        wget && \
+        wget -q -O chrome-linux64.zip https://bit.ly/chrome-linux64-121-0-6167-85 && \
+        unzip chrome-linux64.zip && \
+        rm chrome-linux64.zip && \
+        mv chrome-linux64 /opt/chrome/ && \
+        ln -s /opt/chrome/chrome /usr/local/bin/ && \
+        wget -q -O chromedriver-linux64.zip https://bit.ly/chromedriver-linux64-121-0-6167-85 && \
+        unzip -j chromedriver-linux64.zip chromedriver-linux64/chromedriver && \
+        rm chromedriver-linux64.zip && \
+        mv chromedriver /usr/local/bin/
+        pip install --no-cache-dir Flask==2.2.5 selenium==4.20.0 flask_cors webdriver-manager google-api-python-client google-auth-httplib2 google-auth-oauthlib waitress
+        pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+        pip install Flask==2.2.5 selenium==4.20.0 flask_cors
+        pip install waitress
+        pip install webdriver-manager
+        
+
+
+    - name: Run tests
+      run: |
+        python test_main.py
+
+    - name: Build Docker image
+      run: docker build -t imageminer .
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push Docker image
+      run: |
+        docker tag imageminer edinsonuwu/imageminer:latest
+        docker push edinsonuwu/imageminer:latest
+      
+    - name: Trigger Render Deployment
+      run: curl -X POST https://api.render.com/deploy/srv-cooqr4v79t8c73fa8dt0?key=jyZGig4q5rY

@@ -18,7 +18,7 @@ def process_data():
         print("Data processing iteration", i+1)
 
 @app.route('/api', methods=['GET'])
-def api():
+def multi_thread_api():
     # Send an immediate response
     response_message = "Response sent. Continuing to process data..."
     response = jsonify({"message": response_message})
@@ -30,17 +30,23 @@ def api():
     
     return response
 
-def get_len_of_word(word):
-    # Aquí puedes realizar cualquier acción necesaria con la palabra
-    return len(word)
+@app.route('/', methods=['GET'])
+def welcome():
+    # Send an immediate response
+    response_message = "This is the welcome endpoint to image miner. Creating n-sized images datasets is now possible!"
+    response = jsonify({"message": response_message})
+    response.status_code = 200
+   
+    return response
 
 @app.route('/web_scrapping', methods=['POST'])
 def get_length():
     data = request.json
     query_string = data.get('query')
+    number_of_images_int= data.get('number_of_images')
     search_query = query_string
     destination_folder = convert_to_valid_folder_name(search_query)
-    number_of_images = 100
+    number_of_images = int(number_of_images_int)
     download_images_from_google(search_query, destination_folder, number_of_images)#getting images
     local_images_folder_path = destination_folder
     creds = authenticate_gdrive()
