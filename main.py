@@ -18,7 +18,7 @@ def process_data():
         print("Data processing iteration", i+1)
 
 @app.route('/api', methods=['GET'])
-def api():
+def multi_thread_api():
     # Send an immediate response
     response_message = "Response sent. Continuing to process data..."
     response = jsonify({"message": response_message})
@@ -31,7 +31,7 @@ def api():
     return response
 
 @app.route('/', methods=['GET'])
-def api():
+def welcome():
     # Send an immediate response
     response_message = "This is the welcome endpoint to image miner. Creating n-sized images datasets is now possible!"
     response = jsonify({"message": response_message})
