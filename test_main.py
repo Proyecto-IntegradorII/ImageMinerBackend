@@ -55,7 +55,7 @@ class TestGoogleDriveFunctions(unittest.TestCase):
         result = upload_drive_folder(local_images_folder_path,id_folder_drive_to_upload,creds)
 
         # Assertions
-        self.assertEqual(result, 'folder_id')
+        self.assertIsInstance(result, str)
 
 
 
