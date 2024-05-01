@@ -11,3 +11,9 @@ until a new one is created.
 To create one, delete the current token.json.
 And run the program again, a chrome window will
 pop up requiring permision on drogon's account.
+
+
+docker build -t imageminer .
+docker run -p 5000:5000 --name imageminer imageminer
+docker tag imageminer edinsonuwu/imageminer:latest
+docker push edinsonuwu/imageminer:latest

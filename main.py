@@ -38,6 +38,7 @@ def get_len_of_word(word):
 def get_length():
     data = request.json
     query_string = data.get('query')
+    #number_of_images_int= data.get('query')
     search_query = query_string
     destination_folder = convert_to_valid_folder_name(search_query)
     number_of_images = 100
