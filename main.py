@@ -43,7 +43,7 @@ def welcome():
 def get_length():
     data = request.json
     query_string = data.get('query')
-    number_of_images_int= data.get('query')
+    number_of_images_int= data.get('number_of_images')
     search_query = query_string
     destination_folder = convert_to_valid_folder_name(search_query)
     number_of_images = int(number_of_images_int)
