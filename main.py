@@ -1,4 +1,5 @@
-from flask import Flask, jsonify
+import io
+from flask import Flask, jsonify, send_file
 import threading
 import time
 from flask_cors import CORS
@@ -8,8 +9,9 @@ from googleapiclient.discovery import build
 from auxiliars import convert_to_valid_folder_name
 from oauth import authenticate_gdrive, create_new_folder_and_get_id, upload_drive_folder
 from scrapping import download_images_from_google
-
+import zipfile
 import os
+from googleapiclient.http import MediaIoBaseDownload
 
 app = Flask(__name__)
 CORS(app)
@@ -71,6 +73,35 @@ def count_files():
     file_count = len(response.get('files', []))
     
     return jsonify({'file_count': file_count})
+
+def download_folder_as_zip(folder_id, zip_file_name):
+    folder_contents = build('drive', 'v3', credentials=authenticate_gdrive()).files().list(q=f"'{folder_id}' in parents",
+                                                  fields="files(id, name)").execute().get('files', [])
+
+    with zipfile.ZipFile(zip_file_name, 'w') as zipf:
+        for file in folder_contents:
+            file_id = file.get('id')
+            file_name = file.get('name')
+            request = build('drive', 'v3', credentials=authenticate_gdrive()).files().get_media(fileId=file_id)
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while done is False:
+                status, done = downloader.next_chunk()
+            fh.seek(0)
+            zipf.writestr(file_name, fh.read())
+
+
+@app.route('/download_folder', methods=['GET'])
+def download_folder():
+    folder_id = request.args.get('folder_id')
+    if not folder_id:
+        return "Error: 'folder_id' parameter is required", 400
+
+    zip_file_name = 'downloaded_folder.zip'
+    download_folder_as_zip(folder_id, zip_file_name)
+
+    return send_file(zip_file_name, as_attachment=True)
 
 if __name__ == '__main__':
     from waitress import serve
