@@ -3,10 +3,13 @@ import threading
 import time
 from flask_cors import CORS
 from flask import Flask, jsonify, request
-
+import requests
+from googleapiclient.discovery import build
 from auxiliars import convert_to_valid_folder_name
 from oauth import authenticate_gdrive, create_new_folder_and_get_id, upload_drive_folder
 from scrapping import download_images_from_google
+
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -55,6 +58,19 @@ def get_length():
     processing_thread.start()
     return jsonify({"folder_id": id_folder_drive_to_upload}), 200
 
+@app.route('/count_files', methods=['POST'])
+def count_files():
+    data = request.json
+    
+    folder_id = data.get('folder_id')  # Replace with the ID of your Google Drive folder
+    
+    # Fetch the list of files in the folder
+    response = build('drive', 'v3', credentials=authenticate_gdrive()).files().list(q=f"'{folder_id}' in parents", fields="files(id)").execute()
+    
+    # Count the number of files
+    file_count = len(response.get('files', []))
+    
+    return jsonify({'file_count': file_count})
 
 if __name__ == '__main__':
     from waitress import serve
