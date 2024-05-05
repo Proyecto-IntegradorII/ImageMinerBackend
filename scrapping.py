@@ -41,7 +41,7 @@ def download_images_from_google(search_query, destination_folder, number_of_imag
         if count < number_of_images:
             width = driver.execute_script("return arguments[0].naturalWidth", image)
             height = driver.execute_script("return arguments[0].naturalHeight", image)
-            if width > 100 and height > 100:
+            if width > 100 and height > 100 and height < 720 and width < 720:
                 src = image.get_attribute('src')
                 try:
                     if src and src.startswith('http'):
